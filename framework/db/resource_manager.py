@@ -9,6 +9,7 @@ from framework.utils import FileOperations
 
 class ResourceDB(BaseComponent, ResourceInterface):
 
+<<<<<<< HEAD
     COMPONENT_NAME = "resource"
 
     def __init__(self):
@@ -18,6 +19,12 @@ class ResourceDB(BaseComponent, ResourceInterface):
         self.target = self.get_component("target")
         self.db = self.get_component("db")
         self.LoadResourceDBFromFile(self.config.get_profile_path("RESOURCES_PROFILE"))
+=======
+class ResourceDB(object):
+    def __init__(self, Core):
+        self.Core = Core
+        self.LoadResourceDBFromFile(self.Core.Config.get_profile_path("RESOURCES_PROFILE"))
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 
     def LoadResourceDBFromFile(self, file_path): # This needs to be a list instead of a dictionary to preserve order in python < 2.7
         logging.info("Loading Resources from: " + file_path + " ..")
@@ -27,12 +34,23 @@ class ResourceDB(BaseComponent, ResourceInterface):
         self.db.session.query(models.Resource).filter_by(dirty=False).delete()
         # resources = [(Type, Name, Resource), (Type, Name, Resource),]
         for Type, Name, Resource in resources:
+<<<<<<< HEAD
             self.db.session.add(models.Resource(resource_type = Type, resource_name = Name, resource = Resource))
         self.db.session.commit()
 
     def GetResourcesFromFile(self, resource_file):
         resources = set()
         ConfigFile = FileOperations.open(resource_file, 'r').read().splitlines() # To remove stupid '\n' at the end
+=======
+            # TODO: Need more filtering to avoid duplicates when users are allowed to edit resources from interface
+            # if self.Core.DB.session.query(models.Resource).filter_by(resource_type = Type, resource_name = Name, resource = Resource).count() == 0:
+            self.Core.DB.session.add(models.Resource(resource_type = Type, resource_name = Name, resource = Resource))
+        self.Core.DB.session.commit()
+
+    def GetResourcesFromFile(self, resource_file):
+        resources = set()
+        ConfigFile = self.Core.open(resource_file, 'r').read().splitlines() # To remove stupid '\n' at the end
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
         for line in ConfigFile:
             if '#' == line[0]:
                 continue # Skip comment lines

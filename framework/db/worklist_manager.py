@@ -119,6 +119,10 @@ class WorklistManager(BaseComponent):
                     self._derive_work_dict(work_model))
         return results
 
+    def get_total_work_count(self):
+        return self.Core.DB.session.query(models.Work).filter_by(
+            active=True).count()
+
     def get_work(self, in_use_target_list):
         query = self.db.session.query(models.Work).filter_by(
             active=True).order_by(models.Work.id)
@@ -160,10 +164,16 @@ class WorklistManager(BaseComponent):
                         # If force overwrite is true then plugin output has
                         # to be deleted first
                         if force_overwrite is True:
+<<<<<<< HEAD
                             self.plugin_output.DeleteAll({
                                 "target_id": target["id"],
                                 "plugin_key": plugin["key"]
                             })
+=======
+                            self.Core.DB.POutput.DeleteAll(
+                                {"plugin_key": plugin["key"]},
+                                target_id=target["id"])
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
                         work_model = models.Work(
                             target_id=target["id"],
                             plugin_key=plugin["key"])

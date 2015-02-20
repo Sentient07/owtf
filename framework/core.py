@@ -36,6 +36,7 @@ import os
 import sys
 import signal
 import socket
+import tornado
 import logging
 import multiprocessing
 import subprocess
@@ -49,7 +50,41 @@ from framework.interface import server, cli
 from framework.http.proxy import proxy, transaction_logger
 from framework.plugin import worker_manager
 from framework.lib.formatters import ConsoleFormatter, FileFormatter
+<<<<<<< HEAD
 
+=======
+from framework.selenium import selenium_handler
+from framework.shell import blocking_shell, interactive_shell
+from framework.wrappers.set import set_handler
+from framework.lib.general import cprint, RemoveListBlanks, \
+    List2DictKeys, WipeBadCharsForFilename
+
+
+class Core(object):
+    """
+    The glue which holds everything together
+    """
+    def __init__(self, root_dir, owtf_pid, profiles):
+        """
+        [*] Tightly coupled, cohesive framework components
+        [*] Order is important
+
+        + IO decorated so as to abort on any permission errors
+        + Attach error handler and config
+        + Required folders created
+        + All other components are attached to core: shell, db etc...
+        + Required booleans and attributes are initialised
+        + If modules have Init calls, they are run
+          Init procedures can exist only if the component can do some
+          initialisation only after addition of all components
+        """
+        # ------------------------ IO decoration ------------------------ #
+        self.decorate_io()
+
+        # ------------------------ Error & Config ------------------------ #
+        self.Error = error_handler.ErrorHandler(self)
+        self.Config = config.Config(root_dir, owtf_pid, profiles, self)
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 
 class Core(BaseComponent):
 
@@ -253,6 +288,7 @@ class Core(BaseComponent):
         ComponentInitialiser.initialisation_phase_3(proxy_infos, options)
         self.initialise_plugin_handler_and_params(options)
         # No processing required, just list available modules.
+<<<<<<< HEAD
         if options['list_plugins']:
             self.PluginHandler.show_plugin_list(options['list_plugins'])
             self.finish()
@@ -261,6 +297,17 @@ class Core(BaseComponent):
 
         self.start_botnet_mode(options)
         self.start_proxy(options)  # Proxy mode is started in that function.
+=======
+        if options['ListPlugins']:
+            self.PluginHandler.ShowPluginList()
+            self.finish()
+            return False
+        self.Config.ProcessOptions(options)
+        command = self.GetCommand(options['argv'])
+
+        self.StartBotnetMode(options)
+        self.StartProxy(options)  # Proxy mode is started in that function.
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
         # Set anonymised invoking command for error dump info.
         self.error_handler.SetCommand(OutputCleaner.anonymise_command(command))
         return True
@@ -303,10 +350,12 @@ class Core(BaseComponent):
 
         """
         if getattr(self, "TOR_process", None) is not None:
+            logging.info("Terminating tor process")
             self.TOR_process.terminate()
         # TODO: Fix this for lions_2014
         # if self.db_config.Get('SIMULATION'):
         #    exit()
+<<<<<<< HEAD
         else:
             if getattr(self, "PluginHandler", None) is not None:
                 self.PluginHandler.clean_up()
@@ -333,6 +382,41 @@ class Core(BaseComponent):
             exit(0)
 
     def kill_children(self, parent_pid, sig=signal.SIGINT):
+=======
+        if getattr(self, "PluginHandler", None) is not None:
+            logging.info("Launching clean up of worker manager")
+            self.WorkerManager.clean_up()
+        if getattr(self, "ProxyProcess", None) is not None:
+            logging.info(
+                "Stopping inbound proxy processes and cleaning up. Please wait!")
+            self.KillChildProcesses(self.ProxyProcess.pid)
+            self.ProxyProcess.terminate()
+        if getattr(self, "TransactionLogger", None) is not None:
+            # No signal is generated during closing process by
+            # terminate()
+            logging.info("Sending poison pill to transaction logger")
+            self.TransactionLogger.poison_q.put('done')
+            self.TransactionLogger.join()
+        if getattr(self, "DB", None) is not None:
+            # Properly stop any DB instances.
+            logging.info("Cleaning up DB session")
+            self.DB.clean_up()
+        if getattr(self, "FileServer", None) is not None:
+            logging.info(
+                "Stopping file server process and cleaning up. Please wait!")
+            self.KillChildProcesses(self.FileServer.pid)
+            self.FileServer.terminate()
+        if getattr(self, "InterfaceServer", None) is not None:
+            # Stop any tornado loops
+            logging.info("Stopping tornado loops in the current process, so interface server stops")
+            tornado.ioloop.IOLoop.instance().stop()
+        exit(0)
+
+    def IsIPInternal(self, IP):
+        return len(self.IsIPInternalRegexp.findall(IP)) == 1
+
+    def KillChildProcesses(self, parent_pid, sig=signal.SIGINT):
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
         ps_command = subprocess.Popen(
             "ps -o pid --ppid %d --noheaders" % parent_pid,
             shell=True,
@@ -343,4 +427,42 @@ class Core(BaseComponent):
             try:
                 os.kill(int(pid_str), sig)
             except:
+<<<<<<< HEAD
                 logging.warning("Unable to kill the processus: '%s'", pid_str)
+=======
+                cprint("unable to kill it")
+
+    def decorate_io(self):
+        """Decorate different I/O functions to ensure OWTF to properly quit."""
+        def catch_error(func):
+            """Decorator on I/O functions.
+
+            If an error is detected, force OWTF to quit properly.
+
+            """
+            def io_error(*args, **kwargs):
+                """Call the original function while checking for errors.
+
+                If `owtf_clean` parameter is not explicitely passed or if it is
+                set to `True`, it force OWTF to properly exit.
+
+                """
+                owtf_clean = kwargs.pop('owtf_clean', True)
+                try:
+                    return func(*args, **kwargs)
+                except (OSError, IOError) as e:
+                    if owtf_clean:
+                        self.Error.FrameworkAbort(
+                            "Error when calling '%s'! %s." %
+                            (func.__name__, str(e)))
+                    raise e
+            return io_error
+
+        # Decorated functions
+        self.open = catch_error(open)
+        self.codecs_open = catch_error(codecs.open)
+        self.mkdir = catch_error(os.mkdir)
+        self.makedirs = catch_error(os.makedirs)
+        self.rmtree = catch_error(shutil.rmtree)
+        self.FileHandler = catch_error(logging.FileHandler)
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8

@@ -2,10 +2,14 @@ import os
 import imp
 import json
 from framework.db import models
+<<<<<<< HEAD
 from sqlalchemy import or_
 from framework.dependency_management.dependency_resolver import BaseComponent
 from framework.dependency_management.interfaces import DBPluginInterface
 from framework.utils import FileOperations
+=======
+from sqlalchemy import or_, not_
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 
 
 TEST_GROUPS = ['web', 'net', 'aux']
@@ -220,8 +224,15 @@ class PluginDB(BaseComponent, DBPluginInterface):
                 query = query.filter(models.Plugin.name.in_(criteria["name"]))
         return query
 
-    def GetAll(self, Criteria={}):
-        query = self.GenerateQueryUsingSession(Criteria)
+    def GetAll(self, criteria=None, not_criteria=None):
+        query = self.GenerateQueryUsingSession(criteria)
+        if not_criteria is not None:
+            for key, value in not_criteria.iteritems():
+                if getattr(models.Plugin, key, None):
+                    if isinstance(value, (str, unicode)):
+                        query = query.filter(getattr(models.Plugin, key) != value)
+                    if isinstance(value, list):
+                        query = query.filter(not_(getattr(models.Plugin, key).in_(value)))
         plugin_obj_list = query.all()
         return(self.DerivePluginDicts(plugin_obj_list))
 
@@ -238,3 +249,12 @@ class PluginDB(BaseComponent, DBPluginInterface):
         groups = self.db.session.query(models.Plugin.group).filter(or_(models.Plugin.code.in_(Plugins), models.Plugin.name.in_(Plugins))).distinct().all()
         groups = [i[0] for i in groups]
         return(groups)
+
+    def is_valid_plugin(self, code=None, name=None):
+        criteria = {}
+        if code is not None:
+            criteria["code"] = code
+        if name is not None:
+            criteria["name"] = name
+        query = self.GenerateQueryUsingSession(criteria)
+        return((query.count() > 0))

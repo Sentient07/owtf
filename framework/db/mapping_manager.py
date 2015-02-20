@@ -21,9 +21,13 @@ class MappingDB(BaseComponent, MappingDBInterface):
         self.config = self.get_component("config")
         self.db = self.get_component("db")
         self.mapping_types = []
+<<<<<<< HEAD
 
     def init(self):
         self.LoadMappingDBFromFile(self.config.get_profile_path("MAPPING_PROFILE"))
+=======
+        self.LoadMappingDBFromFile(self.Core.Config.get_profile_path("MAPPING_PROFILE"))
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 
     def LoadMappingDBFromFile(self, file_path):
         """

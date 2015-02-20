@@ -37,9 +37,13 @@ import os
 import re
 import logging
 import socket
+import logging
 
 from copy import deepcopy
+<<<<<<< HEAD
 
+=======
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 from urlparse import urlparse
 from collections import defaultdict
 
@@ -50,7 +54,6 @@ from framework.lib.exceptions import PluginAbortException, \
                                      DBIntegrityException, \
                                      UnresolvableTargetException
 from framework.config import health_check
-from framework.lib.general import cprint
 from framework.db import models, target_manager
 from framework.utils import NetworkOperations, FileOperations
 
@@ -74,6 +77,7 @@ class Config(BaseComponent, ConfigInterface):
         "MAPPING_PROFILE": None
     }
     Target = None
+<<<<<<< HEAD
 
     def __init__(self, root_dir, owtf_pid):
         self.register_in_service_locator()
@@ -85,6 +89,13 @@ class Config(BaseComponent, ConfigInterface):
         self.Config = None
         self.db_plugin = None
         self.worklist_manager = None
+=======
+    def __init__(self, root_dir, owtf_pid, profiles, core):
+        self.RootDir = root_dir
+        self.OwtfPid = owtf_pid
+        self.QuitOnCompletion = False
+        self.Core = core
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
         self.initialize_attributes()
         # key can consist alphabets, numbers, hyphen & underscore.
         self.SearchRegex = re.compile(
@@ -97,6 +108,7 @@ class Config(BaseComponent, ConfigInterface):
             'framework',
             'config',
             'framework_config.cfg'))
+<<<<<<< HEAD
         # The following line must be removed after fixing an issue
         self.LoadProfiles({})
 
@@ -107,6 +119,9 @@ class Config(BaseComponent, ConfigInterface):
         self.target = self.get_component("target")
         self.db_plugin = self.get_component("db_plugin")
         self.worklist_manager = self.get_component("worklist_manager")
+=======
+        self.LoadProfiles(profiles)
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 
     def initialize_attributes(self):
         self.Config = defaultdict(list)  # General configuration information.
@@ -116,8 +131,13 @@ class Config(BaseComponent, ConfigInterface):
     def LoadFrameworkConfigFromFile(self, config_path):
         """Load the configuration from into a global dictionary."""
         if 'framework_config' not in config_path:
+<<<<<<< HEAD
             cprint("Loading Config from: " + config_path + " ..")
         config_file = FileOperations.open(config_path, 'r')
+=======
+            logging.info("Loading Config from: " + config_path + " ..")
+        config_file = self.Core.open(config_path, 'r')
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
         self.Set('FRAMEWORK_DIR', self.RootDir)  # Needed Later.
         for line in config_file:
             try:
@@ -145,6 +165,7 @@ class Config(BaseComponent, ConfigInterface):
         """Process the options from the CLI.
 
         :param dict options: Options coming from the CLI.
+<<<<<<< HEAD
 
         """
         # Backup the raw CLI options in case they are needed later.
@@ -200,6 +221,39 @@ class Config(BaseComponent, ConfigInterface):
             target,
             plugins,
             force_overwrite=options["Force_Overwrite"])
+=======
+
+        """
+        # Backup the raw CLI options in case they are needed later.
+        self.cli_options = deepcopy(options)
+        self.QuitOnCompletion = options["QuitOnCompletion"]
+        target_urls = self.LoadTargets(options)
+        if len(target_urls) > 0:
+            self.load_work(target_urls, options)
+
+    def load_work(self, target_urls, options):
+        """Add plugins and target to worklist
+
+        :param list target_urls: target urls
+        :param dict options: options CLI
+        """
+        targets = self.Core.DB.Target.GetTargetConfigs({"target_url": target_urls})
+        not_filter_data = {}
+        if options["OnlyPlugins"] is None:
+            filter_data = {'type': options['PluginType'], 'group': options["PluginGroup"]}
+            if options["ExceptPlugins"] is not None:
+                not_filter_data["code"] = options["ExceptPlugins"]
+        else:
+            filter_data = {"code": options["OnlyPlugins"]}
+            if options.get("PluginType", None):
+                filter_data["type"] = options["PluginType"]
+        plugins = self.Core.DB.Plugin.GetAll(criteria=filter_data, not_criteria=not_filter_data)
+        force_overwrite = options["Force_Overwrite"]
+        self.Core.DB.Worklist.add_work(
+            targets,
+            plugins,
+            force_overwrite=force_overwrite)
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 
     def get_profile_path(self, profile_name):
         return(self.Profiles.get(profile_name, None))
@@ -207,7 +261,10 @@ class Config(BaseComponent, ConfigInterface):
     def LoadProfiles(self, profiles):
         # This prevents python from blowing up when the Key does not exist :)
         self.Profiles = defaultdict(list)
+<<<<<<< HEAD
         # Now override with User-provided profiles, if present.
+=======
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
         self.Profiles["GENERAL_PROFILE"] = profiles.get('g', None) or \
             self.FrameworkConfigGet("DEFAULT_GENERAL_PROFILE")
         # Resources profile
@@ -231,29 +288,52 @@ class Config(BaseComponent, ConfigInterface):
                 self.target.AddTarget(target)
                 added_targets.append(target)
             except DBIntegrityException:
+<<<<<<< HEAD
                 logging.warning("%s already exists in DB" % target)
             except UnresolvableTargetException as e:
                 logging.error("%s" % e.parameter)
+=======
+                logging.warning(target + " already exists in DB")
+                added_targets.append(target) # Add target even if it is in db
+            except UnresolvableTargetException as e:
+                logging.error(e.parameter)
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
         return(added_targets)
 
     def prepare_url_scope(self, scope, group):
         """Convert all targets to URLs."""
         new_scope = []
         for target_url in scope:
+<<<<<<< HEAD
             if target_url.endswith('/'):
                 target_url = target_url[:-1]
             if target_url.startswith('http'):
                 new_scope.append(target_url)  # Append "as-is".
             else:
+=======
+            if target_url.endswith("/"):
+                target_url = target_url[:-1]
+            if not target_url.startswith("http"):
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
                 # Add both "http" and "https" if not present:
                 # The connection check will then remove from the report if one
                 # does not exist.
                 if group is "net":
+<<<<<<< HEAD
                     new_scope.append('http://%s' % target_url)
                 else:
                     new_scope.extend((
                         '%s://%s' % (prefix, target_url)
                         for prefix in ('http', 'https')))
+=======
+                    new_scope.append('http://' + target_url)
+                else:
+                    new_scope.extend((
+                            '%s://%s' % (prefix, target_url)
+                            for prefix in ('http', 'https')))
+            else:
+                new_scope.append(target_url)  # Append "as-is".
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
         return new_scope
 
     def MultipleReplace(self, text, replace_dict):
@@ -378,31 +458,13 @@ class Config(BaseComponent, ConfigInterface):
         if not self.Get('SIMULATION'):
             FileOperations.create_missing_dirs(self.Get('host_output'))
 
-        # URL Analysis DBs
-        # URL DBs: Distintion between vetted, confirmed-to-exist, in
-        # transaction DB URLs and potential URLs.
-        self.InitHTTPDBs(self.Get('url_output'))
-
-    def DeriveDBPathsFromURL(self, target_URL):
-        targets_folder = os.path.expanduser(self.Get('TARGETS_DB_FOLDER'))
-        url_info_id = target_URL.replace('/','_').replace(':','')
-        transaction_db_path = os.path.join(
-            targets_folder,
-            url_info_id,
-            "transactions.db")
-        url_db_path = os.path.join(targets_folder, url_info_id, "urls.db")
-        plugins_db_path = os.path.join(
-            targets_folder,
-            url_info_id,
-            "plugins.db")
-        return [transaction_db_path, url_db_path, plugins_db_path]
-
     def GetFileName(self, setting, partial=False):
         path = self.Get(setting)
         if partial:
             return os.path.basename(path)
         return path
 
+<<<<<<< HEAD
     def GetHTMLTransaclog(self, partial=False):
         return self.GetFileName('TRANSACTION_LOG_HTML', partial)
 
@@ -420,6 +482,10 @@ class Config(BaseComponent, ConfigInterface):
 
         """
         return hostname == ip
+=======
+    def IsHostNameNOTIP(self, host_name, host_ip):
+        return host_name != host_ip  # Host.
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 
     def GetIPFromHostname(self, hostname):
         ip = ''
@@ -436,20 +502,29 @@ class Config(BaseComponent, ConfigInterface):
                 ip = socket.gethostbyname(hostname)
             except socket.gaierror:
                 raise UnresolvableTargetException(
+<<<<<<< HEAD
                     "Unable to resolve: '%s'" % hostname)
+=======
+                    "Unable to resolve : '%s'" % (hostname));
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 
         ipchunks = ip.strip().split("\n")
         alternative_IPs = []
         if len(ipchunks) > 1:
             ip = ipchunks[0]
-            cprint(
+            logging.info(
                 hostname + " has several IP addresses: (" +
                 ", ".join(ipchunks)[0:-3] + "). Choosing first: " + ip + "")
             alternative_IPs = ipchunks[1:]
         self.Set('alternative_ips', alternative_IPs)
         ip = ip.strip()
+<<<<<<< HEAD
         self.Set('INTERNAL_IP', NetworkOperations.is_ip_internal(ip))
         logging.info("The IP address for %s is: '%s'" % (hostname, ip))
+=======
+        self.Set('INTERNAL_IP', self.Core.IsIPInternal(ip))
+        logging.info("The IP address for " + hostname + " is: '" + ip + "'")
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
         return ip
 
     def GetIPsFromHostname(self, hostname):
@@ -577,9 +652,9 @@ class Config(BaseComponent, ConfigInterface):
         return self.Config
 
     def Show(self):
-        cprint("Configuration settings")
+        logging.info("Configuration settings")
         for k, v in self.GetConfig().items():
-            cprint(str(k) + " => " + str(v))
+            logging.info(str(k) + " => " + str(v))
 
     def GetOutputDir(self):
         return os.path.expanduser(self.FrameworkConfigGet("OUTPUT_PATH"))
@@ -598,6 +673,7 @@ class Config(BaseComponent, ConfigInterface):
             target_URL.replace("/", "_").replace(":", "").replace("#", ""))
 
     def CreateOutputDirForTarget(self, target_URL):
+<<<<<<< HEAD
         FileOperations.create_missing_dirs(self.GetOutputDirForTarget(target_URL))
 
     def GetTransactionDBPathForTarget(self, target_URL):
@@ -614,3 +690,6 @@ class Config(BaseComponent, ConfigInterface):
         return os.path.join(
             self.GetOutputDirForTarget(target_URL),
             self.FrameworkConfigGet("OUTPUT_DB_NAME"))
+=======
+        self.Core.CreateMissingDirs(self.GetOutputDirForTarget(target_URL))
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8

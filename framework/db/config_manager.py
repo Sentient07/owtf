@@ -7,6 +7,7 @@ import ConfigParser
 import logging
 
 
+<<<<<<< HEAD
 class ConfigDB(BaseComponent, DBConfigInterface):
 
     COMPONENT_NAME = "db_config"
@@ -16,6 +17,12 @@ class ConfigDB(BaseComponent, DBConfigInterface):
         self.config = self.get_component("config")
         self.db = self.get_component("db")
         self.LoadConfigDBFromFile(self.config.get_profile_path('GENERAL_PROFILE'))
+=======
+class ConfigDB(object):
+    def __init__(self, Core):
+        self.Core = Core
+        self.LoadConfigDBFromFile(self.Core.Config.get_profile_path('GENERAL_PROFILE'))
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 
     def IsConvertable(self, value, conv):
         try:
@@ -78,8 +85,13 @@ class ConfigDB(BaseComponent, DBConfigInterface):
         if criteria.get('dirty', None):
             if isinstance(criteria.get('dirty'), list):
                 criteria['dirty'] = criteria['dirty'][0]
+<<<<<<< HEAD
             query = query.filter_by(dirty=self.config.ConvertStrToBool(criteria['dirty']))
         return query.order_by(models.ConfigSetting.key)
+=======
+            query = query.filter_by(dirty=self.Core.Config.ConvertStrToBool(criteria['dirty']))
+        return(query.order_by(models.ConfigSetting.key))
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 
     def GetAll(self, criteria=None):
         if not criteria:

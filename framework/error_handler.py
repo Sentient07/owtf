@@ -111,6 +111,10 @@ class ErrorHandler(BaseComponent, ErrorHandlerInterface):
             if 'e' == option:
                 if 'Command' == level:  # Try to save partial plugin results.
                     raise FrameworkAbortException(partial_output)
+<<<<<<< HEAD
+=======
+                    self.Core.finish()  # Interrupted.
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
             elif 'p' == option:  # Move on to next plugin.
                 # Jump to next handler and pass partial output to avoid losing
                 # results.

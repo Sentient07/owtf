@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  Manager Process
 import os
 import sys
 import time
+import Queue
 import signal
 import subprocess
 import logging
@@ -68,7 +69,11 @@ class Worker(OWTFProcess, BaseComponent):
                     self.pid)
                 exit(0)
             except Exception as e:
+<<<<<<< HEAD
                 self.get_component("error_handler").LogError(
+=======
+                self.core.Error.LogError(
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
                     "Exception occured while running :",
                     trace=str(e))
         logging.debug(
@@ -153,6 +158,7 @@ class WorkerManager(BaseComponent, WorkerManagerInterface):
         if there is one
         """
         # Loop while there is some work in worklist
+        work_in_progress = False
         for k in range(0, len(self.workers)):
             if (not self.workers[k]["worker"].output_q.empty()) or (not self.workers[k]["worker"].is_alive()):
                 if self.workers[k]["worker"].is_alive():
@@ -174,6 +180,7 @@ class WorkerManager(BaseComponent, WorkerManagerInterface):
                     self.workers[k]["worker"].input_q.put(work_to_assign)
                     self.workers[k]["work"] = work_to_assign
                     self.workers[k]["busy"] = True
+<<<<<<< HEAD
                 if not self.keep_working:
                     if not self.is_any_worker_busy():
                         logging.info("All jobs have been done. Exiting.")
@@ -183,6 +190,12 @@ class WorkerManager(BaseComponent, WorkerManagerInterface):
     def is_any_worker_busy(self):
         """If a worker is still busy, return True. Return False otherwise."""
         return True in [worker['busy'] for worker in self.workers]
+=======
+            work_in_progress = work_in_progress or self.workers[k]["busy"]
+        if (self.core.Config.QuitOnCompletion and not work_in_progress) and \
+                (self.core.DB.Worklist.get_total_work_count() == 0):
+            self.core.finish()
+>>>>>>> 266a0088788706b7914038e7c568bc3a6621f4b8
 
     def poison_pill_to_workers(self):
         """
